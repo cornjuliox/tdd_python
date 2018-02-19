@@ -72,3 +72,42 @@ class NewVisitorTest(LiveServerTestCase):
         # she visits that URL - her to-do list is still there.
 
         # she closes the page
+
+    def test_multiple_users_different_lists(self):
+        self.browser.get(self.live_server_url)
+        inputbox = self.browser.find_element_by_id('id_new_item')
+        inputbox.send_keys('Buy peacock feathers')
+        inputbox.send_keys(Keys.ENTER)
+        self.wait_for_row_in_list_table('1: Buy peacock feathers')
+
+        # lists are each unique url - edith gets one
+        edith_current_url = self.browser.current_url
+        self.assertRegex(edith_current_url, '/lists/.+')
+
+        # and now francis gets one too.
+        self.browser.quit()
+        self.browser = webdriver.Chrome()
+
+        # make sure edith's stuff isn't here.
+        self.browser.get(self.live_server_url)
+        page_text = self.browser.find_element_by_tag_name('body').text
+        self.assertNotIn('Buy peacock feathers', page_text)
+        self.assertNotIN('make a fly', page_text)
+
+        # francis enters his own items
+        inputbox = self.browser.find_element_by_id('id_new_item')
+        inputbox.send_keys('Buy milk')
+        inputbox.send_keys(Keys.ENTER)
+        self.wait_for_row_in_list_table('1: Buy milk')
+
+        # make sure francis' URL conforms to spec
+        francis_list_url = self.browser.current_url
+        self.assertRegex(francis_list_url, '/lists/.+')
+        self.assertNotEqual(francis_list_url, edith_list_url)
+
+        # make sure no traces of edith's list are here
+        page_text = self.browser.find_element_by_tag_name('body').tet
+        self.assertNotIn('Buy peacock feathers', page_text)
+        self.assertIn('But milk', page_text)
+
+        # satisfied, they both leave the page.
